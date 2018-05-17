@@ -83,26 +83,12 @@ class GUI(QMainWindow):
         self.height = 480
         self.resize(self.width, self.height)
 
-        self.central_layout = QHBoxLayout()
-
-        self.central_widget = QWidget()
-        self.search_HBox = self.__init_search_HBox()
-
-        self.room_list = self.__init_room_list()
-        self.room_list.currentItemChanged.connect(self.__update_appliances)
-        self.room_list_layout = self.__init_room_list_layout()
-
-        self.appliances_layout = self.__make_appliances_layout(0)
-        self.appliances_search_layout = self.__init_appliances_search_list_layout()
-
-        self.central_layout.addLayout(self.room_list_layout)
-        self.central_layout.addLayout(self.appliances_search_layout)
-
-        self.central_widget.setLayout(self.central_layout)
-
-
-        self.setCentralWidget(self.central_widget)
-
+        self.__init_search_box()
+        self.__init_rooms()
+        self.__init_appliances_with_search()
+        self.__init_layouts()
+        self.__center_window()
+        self.__init_menu_bar()
 
 
     def keyPressEvent(self, event: QKeyEvent):
@@ -114,25 +100,15 @@ class GUI(QMainWindow):
         elif event.key() == Qt.Key_Down and QApplication.focusWidget() == self.search_HBox.itemAt(0).widget():
             if self.room_list.currentRow() == 0:
                 index = 1
-                print(type(self.appliances_layout.itemAt(index).widget()))
-                print(self.appliances_layout.itemAt(index).widget().text())
-
                 while type(self.appliances_layout.itemAt(index).widget()) == QLabel or \
                         self.appliances_layout.itemAt(index).widget().isHidden() and \
                         index < self.appliances_layout.count():
                     index = index + 1
-                print(QApplication.focusWidget().text())
-                print(index)
                 self.appliances_layout.itemAt(index).widget().setFocus()
-                print(QApplication.focusWidget().text())
-
             else:
                 self.appliances_layout.itemAt(0).widget().setFocus()
 
-
-
-
-    def __init_search_HBox(self):
+    def __init_search_box(self):
         self.search_widget = QWidget()
 
         qvb = QHBoxLayout()
@@ -146,11 +122,59 @@ class GUI(QMainWindow):
         qvb.addWidget(search_button)
 
         self.search_widget.setLayout(qvb)
+        self.search_HBox = qvb
 
-        return qvb
+    def __init_layouts(self):
+        self.central_layout = QHBoxLayout()
+        self.central_widget = QWidget()
+        self.central_layout.addLayout(self.room_list_layout)
+        self.central_layout.addLayout(self.appliances_search_layout)
+        self.central_widget.setLayout(self.central_layout)
+        self.setCentralWidget(self.central_widget)
+
+    def __init_appliances_with_search(self):
+        self.appliances_content = QWidget()
+
+        qvb = QVBoxLayout()
+        qvb.setAlignment(Qt.AlignTop)
+        for appliance in self.remote_controller.rooms_list[0].stuff:
+            button = ApplianceButton(appliance)
+            qvb.addWidget(button)
+            button.setCheckable(True)
+
+        self.appliances_content.setLayout(qvb)
+
+        self.appliances_list = QScrollArea()
+        self.appliances_list.setWidgetResizable(True)
+        self.appliances_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.appliances_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.appliances_list.setWidget(self.appliances_content)
+
+        self.appliances_layout = qvb
+
+        qvb = QVBoxLayout()
+        qvb.setAlignment(Qt.AlignTop)
+        qvb.addWidget(self.search_widget)
+        qvb.addWidget(self.appliances_list)
+
+        self.appliances_search_layout = qvb
+
+    def __init_rooms(self):
+        room_list_widget = QListWidget()
+        room_list_widget.addItem("Wszystko")
+        room_list_widget.addItems([room.name for room in self.remote_controller.rooms_list])
+        room_list_widget.setMinimumWidth(125)
+        room_list_widget.setMaximumWidth(225)
+        room_list_widget.setCurrentRow(1)
+
+        self.room_list = room_list_widget
+        self.room_list.currentItemChanged.connect(self.__update_appliances)
+
+        qvb = QVBoxLayout()
+        qvb.addWidget(self.room_list)
+        self.room_list_layout = qvb
 
     def __show_all_appliances(self):
-
         for i in reversed(range(self.appliances_layout.count())):
             child = self.appliances_layout.itemAt(i)
             if child.widget() is not None and type(child.widget()) == ApplianceButton:
@@ -165,47 +189,6 @@ class GUI(QMainWindow):
             if child.widget() is not None and type(child.widget()) == ApplianceButton:
                 if pattern not in child.widget().text():
                     child.widget().hide()
-
-    def __make_appliances_layout(self, room_number):
-        self.appliances_content = QWidget()
-
-        self.appliances_list = QScrollArea()
-        self.appliances_list.setWidgetResizable(True)
-        self.appliances_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.appliances_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.appliances_list.setWidget(self.appliances_content)
-
-        qfl = QVBoxLayout()
-        qfl.setAlignment(Qt.AlignTop)
-        for appliance in self.remote_controller.rooms_list[room_number].stuff:
-            button = ApplianceButton(appliance)
-            qfl.addWidget(button)
-            button.setCheckable(True)
-
-        self.appliances_content.setLayout(qfl)
-        return qfl
-
-    def __init_appliances_search_list_layout(self):
-        qvb = QVBoxLayout()
-        qvb.setAlignment(Qt.AlignTop)
-        qvb.addWidget(self.search_widget)
-        qvb.addWidget(self.appliances_list)
-
-        return qvb
-
-    def __init_room_list_layout(self):
-        qvb = QVBoxLayout()
-        qvb.addWidget(self.room_list)
-        return qvb
-
-    def __init_room_list(self):
-        q_list_widget = QListWidget()
-        q_list_widget.addItem("Wszystko")
-        q_list_widget.addItems([room.name for room in self.remote_controller.rooms_list])
-        q_list_widget.setMinimumWidth(125)
-        q_list_widget.setMaximumWidth(225)
-        q_list_widget.setCurrentRow(1)
-        return q_list_widget
 
     def __update_appliances(self):
 
@@ -222,13 +205,39 @@ class GUI(QMainWindow):
                 room_label.setAlignment(Qt.AlignHCenter)
                 self.appliances_layout.addWidget(room_label)
                 for appliance in room.stuff:
-                    button = ApplianceButton(appliance)
-                    self.appliances_layout.addWidget(button)
-
+                    self.appliances_layout.addWidget(ApplianceButton(appliance))
         else:
             for appliance in self.remote_controller.rooms_list[room_number].stuff:
                 button = ApplianceButton(appliance)
                 self.appliances_layout.addWidget(button)
+
+    def __init_menu_bar(self):
+        menu = self.menuBar()
+        turn_on_off_menu = menu.addMenu("Opcje")
+
+        turn_on_all = QAction("Włącz wszystkie", self)
+        turn_on_all.setShortcut("Ctrl+N")
+        turn_on_all.triggered.connect(self.__turn_on_all)
+        turn_on_off_menu.addAction(turn_on_all)
+
+        turn_off_all = QAction("Wyłącz wszystkie", self)
+        turn_off_all.setShortcut("Ctrl+F")
+        turn_off_all.triggered.connect(self.__turn_off_all)
+        turn_on_off_menu.addAction(turn_off_all)
+
+        self.setMenuBar(menu)
+
+    def __turn_on_all(self):
+        self.__change_state_for_all(True)
+
+    def __turn_off_all(self):
+        self.__change_state_for_all(False)
+
+    def __change_state_for_all(self, state):
+        for i in reversed(range(self.appliances_layout.count())):
+            child = self.appliances_layout.itemAt(i)
+            if child.widget() is not None and type(child.widget()) == ApplianceButton:
+                child.widget().change_state(state)
 
     def __center_window(self):
         qt_position = self.frameGeometry()
@@ -248,19 +257,34 @@ class ApplianceButton(QPushButton):
         if self.appliance.state:
             self.setChecked(True)
         self.clicked.connect(self.__on_click)
-        # self.pressed.connect(self.__on_click)
 
     def __on_click(self):
         if self.isChecked():
             self.setStyleSheet('background-color: lightGreen')
             self.setText(self.appliance.name + " : ON")
-            self.appliance.toggle_state()
         else:
             self.setStyleSheet('background-color: red')
             self.setText(self.appliance.name + " : OFF")
-            self.appliance.toggle_state()
 
+        self.appliance.toggle_state()
 
+    def change_state(self, state):
+        if self.appliance.state == state:
+            pass
+
+        if state:
+            self.setStyleSheet('background-color: lightGreen')
+            self.setText(self.appliance.name + " : ON")
+            self.setChecked(True)
+            self.appliance.state = True
+            self.appliance.send_to_socket()
+
+        else:
+            self.setStyleSheet('background-color: red')
+            self.setText(self.appliance.name + " : OFF")
+            self.setChecked(False)
+            self.appliance.state = False
+            self.appliance.send_to_socket()
 
 
 

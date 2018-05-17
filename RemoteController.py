@@ -166,27 +166,30 @@ class GUI(QMainWindow):
                 if pattern not in child.widget().text():
                     child.widget().hide()
 
-
     def __make_appliances_layout(self, room_number):
-        self.scroll_area = QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setWidget(QWidget())
+        self.appliances_content = QWidget()
 
-        self.appliances_widget = QWidget()
+        self.appliances_list = QScrollArea()
+        self.appliances_list.setWidgetResizable(True)
+        self.appliances_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.appliances_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.appliances_list.setWidget(self.appliances_content)
 
-        qfl = QVBoxLayout(self.scroll_area)
+        qfl = QVBoxLayout()
         qfl.setAlignment(Qt.AlignTop)
         for appliance in self.remote_controller.rooms_list[room_number].stuff:
             button = ApplianceButton(appliance)
             qfl.addWidget(button)
             button.setCheckable(True)
+
+        self.appliances_content.setLayout(qfl)
         return qfl
 
     def __init_appliances_search_list_layout(self):
         qvb = QVBoxLayout()
         qvb.setAlignment(Qt.AlignTop)
-        qvb.addLayout(self.search_HBox)
-        qvb.addLayout(self.appliances_layout)
+        qvb.addWidget(self.search_widget)
+        qvb.addWidget(self.appliances_list)
 
         return qvb
 

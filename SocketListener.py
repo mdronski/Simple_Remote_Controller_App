@@ -2,6 +2,7 @@ from socket import *
 
 
 class SocketListener:
+    """Listening for messages send by gui"""
 
     @staticmethod
     def listen_socket():
@@ -11,7 +12,7 @@ class SocketListener:
         while True:
             data, address = udp_sock.recvfrom(2018)
             if not data: break
-            print(data, address)
+            print(data.decode(), address)
         udp_sock.close()
 
 
